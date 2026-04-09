@@ -492,20 +492,13 @@ export class SuperSimpleQueueHelper implements ISuperSimpleQueueHelper {
 			escalationDownTimeMs: elapsedMs,
 		};
 
-		const sent = await this.notificationsService.sendNotificationsByIds(
-			monitor,
-			status,
-			escalationDecision,
-			[monitor.escalationNotificationId]
-		);
+		const sent = await this.notificationsService.sendNotificationsByIds(monitor, status, escalationDecision, [monitor.escalationNotificationId]);
 
 		if (!sent) {
 			return;
 		}
 
-		const escalationNotificationIds = Array.from(
-			new Set([...(activeIncident.escalationNotificationIds ?? []), monitor.escalationNotificationId])
-		);
+		const escalationNotificationIds = Array.from(new Set([...(activeIncident.escalationNotificationIds ?? []), monitor.escalationNotificationId]));
 		await this.incidentsRepository.updateById(activeIncident.id, activeIncident.teamId, {
 			escalationNotificationIds,
 			escalationCount: dueEscalationCount,
