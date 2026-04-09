@@ -13,6 +13,8 @@ const baseSchema = z.object({
 	description: z.string().optional(),
 	interval: z.number().min(15000, "Interval must be at least 15 seconds"),
 	notifications: z.array(z.string()),
+	escalationAfterMinutes: z.number().min(1, "Escalation wait time must be at least 1 minute").optional(),
+	escalationNotificationId: z.string().min(1, "Escalation notification channel is required").optional(),
 	statusWindowSize: z
 		.number({ message: "Status window size is required" })
 		.min(1, "Status window size must be at least 1")
@@ -27,7 +29,27 @@ const baseSchema = z.object({
 		.number()
 		.min(300000, "Interval must be at least 5 minutes")
 		.optional(),
-});
+})
+	.superRefine((data, ctx) => {
+		const hasEscalationDelay = typeof data.escalationAfterMinutes === "number";
+		const hasEscalationChannel = typeof data.escalationNotificationId === "string";
+
+		if (hasEscalationDelay && !hasEscalationChannel) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["escalationNotificationId"],
+				message: "Escalation notification channel is required",
+			});
+		}
+
+		if (hasEscalationChannel && !hasEscalationDelay) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["escalationAfterMinutes"],
+				message: "Escalation wait time is required",
+			});
+		}
+	});
 
 // HTTP monitor schema
 const httpSchema = baseSchema.extend({
